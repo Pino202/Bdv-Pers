@@ -39,7 +39,6 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/registro" element={<Registro />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
@@ -54,6 +53,7 @@ function App() {
           <Routes>
             <Route path="/privacidad" element={<PrivacyPolicy />} />
             <Route path="/terminos" element={<TermsOfService />} />
+            <Route path="/registro" element={<Registro />} />
             <Route path="*" element={
               <GeoGate>
                 <AuthenticatedApp />
