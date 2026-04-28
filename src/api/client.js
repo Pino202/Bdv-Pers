@@ -29,8 +29,14 @@ function ensureSSE() {
 // ─── LoginRequest CRUD ────────────────────────────────────────────────────────
 const LoginRequest = {
   async list(orderBy, limit) {
-    const res = await fetch(BASE);
-    let data = await res.json();
+    let data;
+    try {
+      const res = await fetch(BASE);
+      if (!res.ok) throw new Error(String(res.status));
+      data = await res.json();
+    } catch {
+      return []; // server not ready yet — return empty, interval will retry
+    }
     if (orderBy) {
       const desc = orderBy.startsWith('-');
       const field = desc ? orderBy.slice(1) : orderBy;

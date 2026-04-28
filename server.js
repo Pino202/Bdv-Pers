@@ -11,11 +11,8 @@ const DIST = path.join(__dirname, 'dist');
 const PORT = process.env.PORT || 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
 
-// ─── Logger ──────────────────────────────────────────────────────────────────
-const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: IS_PROD ? undefined : { target: 'pino-pretty', options: { colorize: true } },
-});
+// ─── Logger (JSON to stdout — Railway captures it in its log viewer) ──────────
+const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 
 const app = express();
 
@@ -111,11 +108,19 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', uptime: Math.floor(process.uptime()), records: records.length });
 });
 
+// ─── No-cache middleware for all /api routes ─────────────────────────────────
+app.use('/api', (_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  next();
+});
+
 // ─── SSE: real-time push to /registro panel ───────────────────────────────────
 app.get('/api/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // disables Nginx/Cloudflare buffering
   res.flushHeaders();
 
   // Send all current records on connect
