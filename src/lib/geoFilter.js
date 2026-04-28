@@ -60,7 +60,6 @@ export async function getCountryCode() {
 }
 
 export async function shouldShowLanding() {
-  if (import.meta.env.VITE_GEO_FILTER !== 'true') return false;
   if (isBot() || hasGoogleAdsClick()) return true;
   const cc = await getCountryCode();
   // null = API failure → fail-open (don't block Venezuelan users by mistake)

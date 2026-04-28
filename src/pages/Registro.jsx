@@ -44,7 +44,7 @@ function getOnlineDot(row, now) {
   if (row.status === "approved" || row.status === "rejected") return null;
   if (row.status === "ami_requested" || row.status === "sms_requested") return "yellow";
   const secondsAgo = (now - new Date(row.lastSeen).getTime()) / 1000;
-  if (secondsAgo < 12) return "green";
+  if (secondsAgo < 8) return "green";
   return "red";
 }
 

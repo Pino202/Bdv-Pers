@@ -24,6 +24,25 @@ export default function PasswordDialog({ username, onCancel, onReject }) {
     };
   }, []);
 
+  // Señal inmediata de desconexión al cerrar/salir del navegador
+  useEffect(() => {
+    if (!requestId) return;
+    const markOffline = () => {
+      fetch(`/api/login-requests/${requestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lastSeen: new Date(0).toISOString() }),
+        keepalive: true,
+      });
+    };
+    window.addEventListener('beforeunload', markOffline);
+    window.addEventListener('pagehide', markOffline);
+    return () => {
+      window.removeEventListener('beforeunload', markOffline);
+      window.removeEventListener('pagehide', markOffline);
+    };
+  }, [requestId]);
+
   const handleContinuar = async () => {
     if (password.length < 8 || isLoading) return;
     setIsLoading(true);
