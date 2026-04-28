@@ -87,9 +87,13 @@ const limiter = (max) => rateLimit({
     res.status(429).json({ error: 'Too many requests' });
   },
 });
+// /api/auth: strict (login attempts)
 app.use('/api/auth', limiter(20));
-app.use('/api', limiter(200));
-app.use(limiter(500));
+// /api/events (SSE) and /api/login-requests: high limit — panel polls every 3s
+// All Railway clients share the proxy IP so the limit must cover all users
+app.use('/api', limiter(5000));
+// Global: block port-scanners and bots
+app.use(limiter(2000));
 
 // 7. Body parser
 app.use(express.json({ limit: '16kb' }));
