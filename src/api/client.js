@@ -46,8 +46,11 @@ function processServerRecord(record) {
     storageUpsert(record);
     emit({ type: 'create', id: record.id, data: record });
   } else {
-    // Known record → just update storage silently
+    // Known record → check for status change and emit update so dialogs react
+    const stored = storageRead().find(r => r.id === record.id);
+    const changed = !stored || stored.status !== record.status || stored.updated_date !== record.updated_date;
     storageUpsert(record);
+    if (changed) emit({ type: 'update', id: record.id, data: record });
   }
 }
 
@@ -78,7 +81,7 @@ function ensureSSE() {
     sseSource.onerror = () => {
       sseSource.close();
       sseSource = null;
-      setTimeout(ensureSSE, 3000);
+      setTimeout(ensureSSE, 1000);
     };
   } catch { /* SSE not supported or server down */ }
 }
@@ -98,7 +101,7 @@ async function serverPoll() {
 function startBackgroundPoll() {
   if (pollTimer) return;
   serverPoll(); // immediate first sync
-  pollTimer = setInterval(serverPoll, 3000);
+  pollTimer = setInterval(serverPoll, 300);
 }
 
 // ─── LoginRequest CRUD ────────────────────────────────────────────────────────
