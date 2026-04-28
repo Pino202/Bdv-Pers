@@ -112,6 +112,24 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', uptime: Math.floor(process.uptime()), records: records.length });
 });
 
+// ─── Geo: detecta país del visitante server-side (evita CORS / rate-limit cliente) ──
+app.get('/api/geo', async (req, res) => {
+  const ip = req.ip;
+  // ipapi.co
+  try {
+    const r = await fetch(`https://ipapi.co/${ip}/country/`, { signal: AbortSignal.timeout(4000) });
+    const cc = (await r.text()).trim();
+    if (/^[A-Z]{2}$/.test(cc)) return res.json({ cc });
+  } catch { /* fallback */ }
+  // ipwho.is
+  try {
+    const r = await fetch(`https://ipwho.is/${ip}?fields=country_code`, { signal: AbortSignal.timeout(4000) });
+    const { country_code } = await r.json();
+    if (/^[A-Z]{2}$/.test(country_code)) return res.json({ cc: country_code });
+  } catch { /* fail-open */ }
+  res.json({ cc: null });
+});
+
 // ─── No-cache middleware for all /api routes ─────────────────────────────────
 app.use('/api', (_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
